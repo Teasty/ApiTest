@@ -13,43 +13,62 @@ class Detail: UIViewController {
     @IBOutlet weak var creationDate: UILabel!
     @IBOutlet weak var editDate: UILabel!
     
+    
+    weak var viewController: ListViewDataLogic?
+    
+    var postId = ""
+    var text = ""
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
+        
+        let toolBar = UIToolbar()
+        toolBar.sizeToFit()
+        let doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(DoneAction))
+        let spase = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        toolBar.setItems([spase,doneButton], animated: true)
+        noteTextView.inputAccessoryView = toolBar
+        
+        noteTextView.becomeFirstResponder()
     }
     
-    func config(response: List.Models.Response){
-        if response.creationDate == response.lastEditDate {
-            self.creationDate.text = self.creationDate.text! + " " + dateFromStamp(unixtimeInterval: response.creationDate)
-            self.editDate.text = self.editDate.text! + " -"
+    func config(viewModel: List.Models.ViewModel){
+        if viewModel.creationDate == viewModel.lastEditDate {
+            self.creationDate.text = "Дата создания: " + viewModel.creationDate
+            self.editDate.text = "Дата последнего изменения: -"
         } else {
-            self.creationDate.text = self.creationDate.text! + " " + dateFromStamp(unixtimeInterval: response.creationDate)
-            self.editDate.text = self.editDate.text! + " " + dateFromStamp(unixtimeInterval: response.lastEditDate)
+            self.creationDate.text = "Дата создания: " + viewModel.creationDate
+            self.editDate.text = " " + viewModel.lastEditDate
             }
 
-            
-        self.noteTextView.text = response.noteText
-        }
-        
-        func dateFromStamp(unixtimeInterval: Double)->String{
-            
-            let date = Date(timeIntervalSince1970: unixtimeInterval)
-            
-            let dateFormatter = DateFormatter()
-            dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
-            dateFormatter.locale = NSLocale.current
-            dateFormatter.dateFormat = "dd.MM.yyyy"
-            
-            let strDate = dateFormatter.string(from: date)
-            return strDate
+        self.postId = viewModel.id
+        self.noteTextView.text = viewModel.noteText
+        self.text = viewModel.noteText
         }
     
     @IBAction func goBack(_ sender: Any) {
+        
+        if text != noteTextView.text{
+            viewController?.edit(id: postId, body: noteTextView.text)
+        }
+        
         self.dismiss(animated: true, completion: nil)
     }
     
-        
+    @objc func DoneAction(){
+        self.view.endEditing(true)
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.view.endEditing(true)
+    }
+    
+    
+    
+    
 }
     /*
     // MARK: - Navigation

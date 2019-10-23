@@ -14,13 +14,22 @@ import UIKit
 
 protocol ListDisplayLogic: class
 {
-  
+    func reloadData(data: [List.Models.ViewModel])
+    func showError(message: String)
+    func showConnection()
 }
 
-class ListViewController: UITableViewController, ListDisplayLogic
+
+protocol ListViewDataLogic: class{
+    func edit(id: String, body: String)
+    func add(body: String)
+}
+
+class ListViewController: UITableViewController
 {
   var interactor: ListBusinessLogic?
   var router: (NSObjectProtocol & ListRoutingLogic & ListDataPassing)?
+    var data: [List.Models.ViewModel]?
 
   // MARK: Object lifecycle
   
@@ -69,7 +78,9 @@ class ListViewController: UITableViewController, ListDisplayLogic
   override func viewDidLoad()
   {
     super.viewDidLoad()
+    interactor?.getSessionId()
   }
+    
   
   // MARK: Do something
   
@@ -77,25 +88,85 @@ class ListViewController: UITableViewController, ListDisplayLogic
     @IBAction func newNoteButton(_ sender: Any) {
         let storyBoard: UIStoryboard = UIStoryboard(name: "Main", bundle: nil)
         let newViewController = storyBoard.instantiateViewController(withIdentifier: "NewNote") as! NewNote
+        newViewController.viewController = self
         self.present(newViewController, animated: true, completion: nil)
     }
 }
 
-extension ListViewController{
+
+
+
+
+
+// MARK: DisplayLogic, ViewDataLogic Extention
+
+extension ListViewController: ListDisplayLogic, ListViewDataLogic
+{
+    func edit(id: String, body: String) {
+        interactor?.editPost(id: id, body: body)
+    }
+    
+    func add(body: String) {
+        interactor?.addPost(body: body)
+    }
+    
+    func showError(message: String) {
+        
+        let alert = UIAlertController(title: "Произошла ошибка", message: message, preferredStyle: UIAlertController.Style.alert)
+
+        alert.addAction(UIAlertAction(title: "OK", style: UIAlertAction.Style.default, handler: nil))
+
+        DispatchQueue.main.async {
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    
+    func showConnection(){
+        let alert = UIAlertController(title: "Ошибка соединения", message: "Пожалуйста проверьте соединение с интернетомю", preferredStyle: UIAlertController.Style.alert)
+
+        alert.addAction(UIAlertAction(title: "Обновить данные", style: UIAlertAction.Style.default){ UIAlertAction in
+            self.interactor?.getSessionId()
+        })
+
+        DispatchQueue.main.async {
+            self.present(alert, animated: true, completion: nil)
+        }
+    }
+    
+    func reloadData(data: [List.Models.ViewModel]) {
+        self.data = data
+        DispatchQueue.main.async {
+             self.tableView.reloadData()
+        }
+       
+    
+    }
+}
+
+
+
+
+
+
+// MARK: Table Extention
+
+extension ListViewController
+{
     override func numberOfSections(in tableView: UITableView) -> Int {
         return 1
     }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 12
+        return self.data?.count ?? 0
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = self.tableView.dequeueReusableCell(withIdentifier: "NoteCell") as! NoteCell
         
-        let response = List.Models.Response(creationDate: 1442236233, lastEditDate: 1442236233, noteText: "Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.")
+        let viewModel = List.Models.ViewModel(id: data?[indexPath.row].id ?? "", creationDate: data?[indexPath.row].creationDate ?? "01.01.1970", lastEditDate: data?[indexPath.row].lastEditDate ?? "01.01.1970", noteText: data?[indexPath.row].noteText ?? "")
         
-        cell.config(response: response)
+        cell.config(viewModel: viewModel)
         return cell
     }
     
@@ -108,11 +179,24 @@ extension ListViewController{
         let newViewController = storyBoard.instantiateViewController(withIdentifier: "DetailVC") as! Detail
                 self.present(newViewController, animated: true, completion: nil)
         
-        let response = List.Models.Response(creationDate: 1442236233, lastEditDate: 1442236233, noteText: "Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.")
+        let viewModel = List.Models.ViewModel(id: data?[indexPath.row].id ?? "", creationDate: data?[indexPath.row].creationDate ?? "01.01.1970", lastEditDate: data?[indexPath.row].lastEditDate ?? "01.01.1970", noteText: data?[indexPath.row].noteText ?? "")
         
-        newViewController.config(response: response)
+        newViewController.config(viewModel: viewModel)
+        newViewController.viewController = self
         
         self.tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            if let id = self.data?[indexPath.row].id {
+                self.data?.remove(at: indexPath.row)
+                tableView.deleteRows(at: [indexPath], with: .fade)
+                interactor?.removePost(id: id)
+            }
+            
+        }
     }
 }
 

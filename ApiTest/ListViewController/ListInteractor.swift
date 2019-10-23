@@ -14,6 +14,10 @@ import UIKit
 
 protocol ListBusinessLogic
 {
+    func getSessionId()
+    func addPost(body: String)
+    func editPost(id: String, body: String)
+    func removePost(id: String)
 }
 
 protocol ListDataStore
@@ -25,8 +29,78 @@ class ListInteractor: ListBusinessLogic, ListDataStore
 {
   var presenter: ListPresentationLogic?
   var worker: ListWorker?
-  //var name: String = ""
+    
   
+    
   // MARK: Do something
+   
+    func removePost(id: String) {
+        worker = ListWorker()
+        worker?.removePost(id: id, onSuccess: {
+            self.worker?.getPosts(onFail: {
+                self.presenter?.showError(message: "Ошибка при получении данных.")
+            }, onError: {
+                self.presenter?.showConnectionError()
+            }) { [weak self] (posts) -> Void in
+                self?.presenter?.presentData(response: posts)
+            }
+        }, onFail: {
+            self.presenter?.showError(message: "Ошибка при сохранении данных.")
+        }, onError: {
+            
+        })
+    }
+    
+    func addPost(body: String) {
+        worker = ListWorker()
+        worker?.createPost(body: body, onSuccess: {
+            self.worker?.getPosts(onFail: {
+                self.presenter?.showError(message: "Ошибка при получении данных.")
+            }, onError: {
+                self.presenter?.showConnectionError()
+            }) { [weak self] (posts) -> Void in
+             self?.presenter?.presentData(response: posts)
+            }
+        }, onFail: {
+            self.presenter?.showError(message: "Ошибка при сохранении данных.")
+        }, onError: {
+            
+        })
+    }
+    
+    func editPost(id: String, body: String) {
+        worker = ListWorker()
+        worker?.editPost(id: id, body: body, onSuccess: {
+            self.worker?.getPosts(onFail: {
+                self.presenter?.showError(message: "Ошибка при получении данных.")
+            }, onError: {
+                self.presenter?.showConnectionError()
+            }) { [weak self] (posts) -> Void in
+                self?.presenter?.presentData(response: posts)
+            }
+        }, onFail: {
+            self.presenter?.showError(message: "Ошибка при сохранении данных.")
+        }, onError: {
+            
+        })
+    }
+    
+   
+    func getSessionId() {
+        worker = ListWorker()
+        worker?.getSessionId(onSuccess: {
+            self.worker?.getPosts(onFail: {
+                self.presenter?.showError(message: "Ошибка при получении данных.")
+            }, onError: {
+                self.presenter?.showConnectionError()
+            }) { [weak self] (posts) -> Void in
+                self?.presenter?.presentData(response: posts)
+               }
+        }, onFail: {
+            self.presenter?.showError(message: "Ошибка при получении данных сессии.")
+        }, onError: {
+            
+        })
+    }
   
 }

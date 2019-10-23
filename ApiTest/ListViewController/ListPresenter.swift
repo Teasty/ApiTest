@@ -14,12 +14,51 @@ import UIKit
 
 protocol ListPresentationLogic
 {
+    func presentData(response: [List.Models.Response])
+    func showError(message: String)
+    func showConnectionError()
 }
 
 class ListPresenter: ListPresentationLogic
 {
+   
   weak var viewController: ListDisplayLogic?
-  
+
   // MARK: Do something
+    
+    func showConnectionError() {
+        viewController?.showConnection()
+       }
+       
   
+    func showError(message: String) {
+        viewController?.showError(message: message)
+    }
+    
+    func presentData(response: [List.Models.Response]) {
+        var posts:[List.Models.ViewModel] = []
+        
+        for entry in response{
+            let post = List.Models.ViewModel(id: entry.id, creationDate: dateFromStamp(unixtimeInterval: entry.creationDate), lastEditDate: dateFromStamp(unixtimeInterval: entry.lastEditDate), noteText: entry.noteText)
+            
+            posts.append(post)
+        }
+        
+        viewController?.reloadData(data: posts)
+        
+    }
+    
+    func dateFromStamp(unixtimeInterval: Double)->String{
+        
+        let date = Date(timeIntervalSince1970: unixtimeInterval)
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.timeZone = TimeZone(abbreviation: "GMT")
+        dateFormatter.locale = NSLocale.current
+        dateFormatter.dateFormat = "dd.MM.yyyy"
+        
+        let strDate = dateFormatter.string(from: date)
+        return strDate
+    }
+    
 }

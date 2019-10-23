@@ -13,6 +13,8 @@ class NewNote: UIViewController {
     @IBOutlet weak var cancelButton: UIButton!
     @IBOutlet weak var doneButton: UIButton!
     
+    weak var viewController: ListViewDataLogic?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
@@ -44,6 +46,7 @@ class NewNote: UIViewController {
         self.dismiss(animated: true, completion: nil)
     }
     @IBAction func dene(_ sender: Any) {
+        viewController?.add(body: notetextView.text)
         self.dismiss(animated: true, completion: nil)
     }
     

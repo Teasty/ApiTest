@@ -23,12 +23,18 @@ enum List
     }
     struct Response
     {
+        let id: String
         let creationDate: Double
         let lastEditDate: Double
         let noteText: String
+        
     }
     struct ViewModel
     {
+        let id: String
+        let creationDate: String
+        let lastEditDate: String
+        let noteText: String
     }
   }
 }

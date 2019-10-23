@@ -14,7 +14,196 @@ import UIKit
 
 class ListWorker
 {
-  func doSomeWork()
-  {
+//    MARK: Get Session Id
+    
+    
+    
+    func getSessionId(onSuccess: (() -> Void)?, onFail: (() -> Void)?, onError: (() -> Void)?)
+    {
+        guard let id = UserDefaults.standard.string(forKey: "sessionId") else {
+            
+        var request = createRequest()
+        
+        let postString = "a=new_session"
+        request.httpBody = postString.data(using: .utf8)
+        
+        URLSession.shared.dataTask(with: request){(data, response, error) in
+            guard let data = data else { return }
+            
+            if error != nil{
+                onError?()
+            }
+            
+            print(String(data: data, encoding: .utf8)!)
+            do{
+                let apiResponse = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? NSDictionary
+                if let data = apiResponse!["data"] as? [String:Any]{
+                    let sessionId = data["session"] as! String
+                    print(sessionId)
+                    
+                    UserDefaults.standard.set(sessionId, forKey: "sessionId")
+                    onSuccess?()
+                    
+                    if (apiResponse!["error"] as! String) != nil{
+                        onFail?()
+                    }
+                    
+                }
+            }catch{
+                (print(error.localizedDescription))
+            }
+        }.resume()
+    return}
+        onSuccess?()
+        
   }
+    
+//    MARK: Get Entries
+    
+    func getPosts(onFail: (() -> Void)?, onError: (() -> Void)?, completion: @escaping ([List.Models.Response]) -> ()){
+        
+        var request = createRequest()
+        
+        let postString = "a=get_entries&session=\(UserDefaults.standard.string(forKey: "sessionId")!)"
+        request.httpBody = postString.data(using: .utf8)
+        
+        URLSession.shared.dataTask(with: request){(data, response, error) in
+            if error != nil{
+                onError?()
+            }
+             guard let data = data else { return }
+            
+                do{
+                    var newData: [List.Models.Response] = []
+                    
+                    let apiResponse = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? NSDictionary
+                    if let newdata = apiResponse?["data"] as? Array<Any>{
+                        let data = newdata[0] as? Array<[String:String]>
+                        
+                        for entry in data!{
+                            let newEntry = List.Models.Response(id: entry["id"]!, creationDate: Double(entry["da"]!)!, lastEditDate: Double(entry["dm"]!)!, noteText: entry["body"]!)
+                            newData.append(newEntry)
+                        }
+                        completion(newData)
+                    }
+                    
+                    if (apiResponse!["error"] as? String) != nil{
+                        onFail?()
+                    }
+                    
+                }catch{
+                    (print(error.localizedDescription))
+                    onFail?()
+                }
+            
+        }.resume()
+    }
+    
+//    MARK: Create Entry
+    
+    func createPost(body: String, onSuccess: (() -> Void)?, onFail: (() -> Void)?, onError: (() -> Void)?){
+        
+        var request = createRequest()
+        
+        let postString = "a=add_entry&session=\(UserDefaults.standard.string(forKey: "sessionId")!)&body=\(body)"
+        request.httpBody = postString.data(using: .utf8)
+        
+        URLSession.shared.dataTask(with: request){(data, response, error) in
+            if error != nil{
+                onError?()
+            }
+            
+            guard let data = data else { return }
+            
+            do{
+                let apiResponse = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? NSDictionary
+                if (apiResponse!["error"] as? String) != nil{
+                    onFail?()
+                }
+                
+            } catch {
+                print(error.localizedDescription)
+            }
+            
+            print(String(data: data, encoding: .utf8)!)
+            onSuccess?()
+        }.resume()
+    }
+    
+//    MARK:  Edit Entry
+
+    func editPost(id: String,body: String, onSuccess: (() -> Void)?, onFail: (() -> Void)?, onError: (() -> Void)?){
+    
+    var request = createRequest()
+    
+    let postString = "a=edit_entry&session=\(UserDefaults.standard.string(forKey: "sessionId")!)&id=\(id)&body=\(body)"
+    request.httpBody = postString.data(using: .utf8)
+    
+    URLSession.shared.dataTask(with: request){(data, response, error) in
+        
+        if error != nil{
+            onError?()
+        }
+        
+        guard let data = data else { return }
+        
+        do{
+            let apiResponse = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? NSDictionary
+            
+            if (apiResponse!["error"] as? String) != nil{
+                onFail?()
+            }
+            
+        } catch {
+            print(error.localizedDescription)
+        }
+        
+        print(String(data: data, encoding: .utf8)!)
+        onSuccess?()
+    }.resume()
+}
+
+//    MARK: Delete Entry
+    
+    func removePost(id: String, onSuccess: (() -> Void)?, onFail: (() -> Void)?, onError: (() -> Void)?){
+        var request = createRequest()
+        
+        let postString = "a=remove_entry&session=\(UserDefaults.standard.string(forKey: "sessionId")!)&id=\(id)"
+        request.httpBody = postString.data(using: .utf8)
+        
+        URLSession.shared.dataTask(with: request){(data, response, error) in
+            if error != nil{
+                onError?()
+            }
+            
+            guard let data = data else { return }
+            
+            do{
+                let apiResponse = try JSONSerialization.jsonObject(with: data, options: .allowFragments) as? NSDictionary
+                
+                if (apiResponse!["error"] as? String) != nil{
+                    onFail?()
+                }
+                
+            } catch {
+                print(error.localizedDescription)
+            }
+            
+            print(String(data: data, encoding: .utf8)!)
+            onSuccess?()
+        }.resume()
+    }
+    
+//    MARK: Set Request
+    
+    func createRequest() -> URLRequest{
+        let url = URL(string: "https://bnet.i-partner.ru/testAPI/")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        request.setValue("Q3gk8SO-GQ-sjeXac3", forHTTPHeaderField: "token")
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        return request
+    }
 }
