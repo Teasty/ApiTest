@@ -123,7 +123,7 @@ extension ListViewController: ListDisplayLogic, ListViewDataLogic
     
     
     func showConnection(){
-        let alert = UIAlertController(title: "Ошибка соединения", message: "Пожалуйста проверьте соединение с интернетомю", preferredStyle: UIAlertController.Style.alert)
+        let alert = UIAlertController(title: "Ошибка соединения", message: "Пожалуйста проверьте соединение с интернетом", preferredStyle: UIAlertController.Style.alert)
 
         alert.addAction(UIAlertAction(title: "Обновить данные", style: UIAlertAction.Style.default){ UIAlertAction in
             self.interactor?.getSessionId()
